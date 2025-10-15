@@ -1,7 +1,6 @@
 from flask import Flask, request
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-import os
 import telegram.ext
 
 # --- PATCH ناسازگاری پایتون ۳.۱۳ با کلاس Updater در PTB v20.6 ---
@@ -12,12 +11,15 @@ try:
         print("✅ Patch for Python 3.13 applied successfully")
 except Exception as e:
     print("⚠️ Patch not applied:", e)
-
 # ------------------------------------------------------------------
 
-TOKEN = os.getenv("BOT_TOKEN")
+# 🔹 توکن واقعی ربات AiTabBot
+TOKEN = "8451634743:AAH7J4RtoICOcVqJ7VWbXZGwmjqqUtRzvRA"
+
+# 🔹 آدرس Mini App مورد نظر
 MINI_APP_URL = "https://epic-calm-reports-d9f9cb01.base44.app"
 
+# --- Flask App و Telegram Application ---
 app = Flask(__name__)
 application = Application.builder().token(TOKEN).build()
 
@@ -26,7 +28,10 @@ application = Application.builder().token(TOKEN).build()
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[KeyboardButton("🔹 باز کردن Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
     markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("سلام 👋 من آی‌تاب‌بات هستم.\nروی دکمه پایین کلیک کن:", reply_markup=markup)
+    await update.message.reply_text(
+        "سلام 👋 من آی‌تاب‌بات هستم.\nروی دکمه پایین کلیک کن:",
+        reply_markup=markup
+    )
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"پیام دریافت شد: {update.message.text}")
