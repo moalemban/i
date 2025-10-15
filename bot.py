@@ -1,71 +1,83 @@
+# AiTabBot — Calm Webhook Edition 2025
+# Author: Hossein Taherkenar (Tabdila / Farhangian University Kerman)
+# Description: Pure Flask + Bot webhook (no Application, no Updater)
+# Color theme: Calm Turquoise (#4ED1C9)
+
 from flask import Flask, request
-from telegram import Update, Bot, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-import asyncio, random
+from telegram import Bot, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
+import os
+import random
 
-TOKEN = "8451634743:AAH7J4RtoICOcVqJ7VWbXZGwmjqqUtRzvRA"
-MINI_APP_URL = "https://epic-calm-reports-d9f9cb01.base44.app"
-PORT = 10000
+# ───────────── Configuration ─────────────
+TOKEN = "8451634743:AAH7J4RtoICOcVqJ7VWbXZGwmjqqUtRzvRA"    # fixed, stable bot token
+MINI_APP_URL = "https://epic-calm-reports-d9f9cb01.base44.app"  # AiTab Mini App endpoint
+PORT = int(os.getenv("PORT", 10000))
 
+# ───────────── Flask App + Telegram Bot ─────────────
 app = Flask(__name__)
+bot = Bot(token=TOKEN)
 
-# مرحله ساخت: Application ساخته می‌شود ولی Updater فوراً خنثی می‌گردد
-application = Application.builder().token(TOKEN).build()
-application.updater = None  # 💣 حذف Updater که در build ساخته شده
-application.job_queue = None
-application._running = True  # اجازه اجرای مستقیم بدون start()
-
-# ---------- Handlers ----------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [[KeyboardButton("🚀 ورود به Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
-    markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
-    await update.message.reply_text(
-        "🌤 خوش اومدی به فضای آی‌تاب!\n"
-        "من بات آموزشی و مدیریتی هوشمندت هستم 💡\n"
-        "همه چیز در حالت Calm اجرا می‌شه.",
-        reply_markup=markup,
-    )
-
-async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "🧭 *راهنمای آی‌تاب‌بات*\n"
-        "• /start — ورود و نمایش کلید Mini App\n"
-        "• /about — فلسفه آی‌تاب\n"
-        "• هر پیام معمولی هم با حالت Calm جواب داده می‌شه ✨"
-    )
-    await update.message.reply_markdown(msg)
-
-async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🌿 آی‌تاب: نماد خودمدیریتی و زیبایی در آموزش معلمانه.\n"
-        "من فرآیندهای آموزشی‌ت رو نرم و آرام می‌کنم 💎"
-    )
-
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(random.choice([
-        "✨ دریافت شد، فضای آرام حفظ شد.",
-        "💎 noted در حافظه‌ی Calm.",
-        "📖 یادداشت ذخیره شد.",
-        "🪶 حس نظم ازش اومد!",
-    ]))
-
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("help", help_cmd))
-application.add_handler(CommandHandler("about", about_cmd))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-# ---------- Webhook ----------
 @app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
+def receive_update():
     data = request.get_json(force=True)
-    update = Update.de_json(data, application.bot)
-    asyncio.run(application.process_update(update))
+    if not data or "message" not in data:
+        return "ignored"
+
+    msg = data["message"]
+    chat_id = msg["chat"]["id"]
+    text = msg.get("text", "")
+
+    # ───────────── Commands ─────────────
+    if text == "/start":
+        keyboard = [[KeyboardButton("🚀 ورود به Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
+        markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "🌤 خوش اومدی به فضای آی‌تاب!\n"
+                "من بات آموزشی و مدیریتی هوشمندت هستم 💎\n"
+                "همه‌چیز با حس آرامش و نظم اجرا می‌شه."
+            ),
+            reply_markup=markup,
+        )
+
+    elif text == "/help":
+        bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "🧭 راهنمای آی‌تاب‌بات:\n"
+                "• /start — ورود به Mini App\n"
+                "• /about — معرفی و فلسفه آی‌تاب\n"
+                "• هر پیام طبیعی با پاسخ Calm دریافت میشه ✨"
+            ),
+        )
+
+    elif text == "/about":
+        bot.send_message(
+            chat_id=chat_id,
+            text=(
+                "🌿 آی‌تاب؛ زیباییِ خودمدیریتی معلمانه.\n"
+                "طراحی‌شده برای فضایی منظم، آرام و هوشمند 💠"
+            ),
+        )
+
+    else:
+        bot.send_message(
+            chat_id=chat_id,
+            text=random.choice([
+                "🪶 پیام دریافت شد با حس آرامش.",
+                "📖 noted در سیستم Calm.",
+                "✨ حفظ شد در دفتر آی‌تاب.",
+                "💎 نظمش حس شد!"
+            ]),
+        )
+
     return "OK"
 
 @app.route("/", methods=["GET"])
 def home():
-    return "🌊 AiTabBot Webhook-only — Python 3.13 stable ✅"
+    return "🌊 AiTabBot Pure Webhook is running — Calm & Stable."
 
 if __name__ == "__main__":
-    print("✅ AiTabBot running with patched Application (no Updater init)")
+    print("✅ AiTabBot started successfully — Flask webhook mode")
     app.run(host="0.0.0.0", port=PORT)
