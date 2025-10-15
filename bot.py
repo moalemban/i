@@ -2,15 +2,16 @@ from flask import Flask, request
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import os
-import telegram.ext.updater
+import telegram.ext
 
-# --- PATCH ناسازگاری پایتون ۳.۱۳ با python-telegram-bot v20.6 ---
-# این خط جلوی AttributeError مربوط به Updater را می‌گیرد
+# --- PATCH ناسازگاری پایتون ۳.۱۳ با کلاس Updater در PTB v20.6 ---
 try:
-    if not hasattr(telegram.ext.updater.Updater, "_Updater__polling_cleanup_cb"):
-        telegram.ext.updater.Updater._Updater__polling_cleanup_cb = None
+    UpdaterClass = getattr(telegram.ext, "Updater", None)
+    if UpdaterClass and not hasattr(UpdaterClass, "_Updater__polling_cleanup_cb"):
+        setattr(UpdaterClass, "_Updater__polling_cleanup_cb", None)
+        print("✅ Patch for Python 3.13 applied successfully")
 except Exception as e:
-    print("Patch Updater applied:", e)
+    print("⚠️ Patch not applied:", e)
 
 # ------------------------------------------------------------------
 
