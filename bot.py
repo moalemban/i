@@ -1,49 +1,46 @@
-from telegram import (
-    Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    ContextTypes,
-)
 from flask import Flask, request
-from dotenv import load_dotenv
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import os
+import telegram.ext.updater
 
-# بارگذاری .env برای Railway یا توسعه محلی
-load_dotenv()
-TOKEN = os.getenv("TOKEN")
+# Patch برای دور زدن خطای AttributeError در پایتون 3.13
+if not hasattr(telegram.ext.updater.Updater, "_Updater__polling_cleanup_cb"):
+    telegram.ext.updater.Updater._Updater__polling_cleanup_cb = None
 
-app_flask = Flask(__name__)  # برای تست محلی (Webhook یا health check)
+# -----------------------------
+TOKEN = os.getenv("BOT_TOKEN")
+MINI_APP_URL = "https://epic-calm-reports-d9f9cb01.base44.app"
 
-@app_flask.route("/")
-def home():
-    return "AiTab Railway Bot Running 🩵"
+app = Flask(__name__)
+application = Application.builder().token(TOKEN).build()
 
-# تابع اصلی برای فرمان /start
+
+# ======= COMMAND HANDLERS =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    webapp_url = "https://epic-calm-reports-d9f9cb01.base44.app"
+    keyboard = [[KeyboardButton("🔹 باز کردن Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text("سلام 👋 من آی‌تاب‌بات هستم.\nروی دکمه پایین کلیک کن:", reply_markup=reply_markup)
 
-    # دکمه دائمی کنار کادر تایپ
-    reply_keyboard = [[KeyboardButton("باز کردن آی‌تاب 🩵", web_app={"url": webapp_url})]]
-    markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
 
-    # دکمه درون‌پیامی (Inline)
-    inline_button = InlineKeyboardButton("ورود به آی‌تاب 🩵", web_app={"url": webapp_url})
-    inline_markup = InlineKeyboardMarkup([[inline_button]])
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"پیام دریافت شد: {update.message.text}")
 
-    await update.message.reply_text("خوش آمدی به آی‌تاب 🎯", reply_markup=markup)
-    await update.message.reply_text("برای ورود به اپ هوشمند، روی دکمه‌ی زیر بزن:", reply_markup=inline_markup)
 
-# ساخت اپلیکیشن ربات
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-# اجرای مستقیم به‌صورت polling (برای تست یا Railway بدون SSL)
+
+# ======= WEBHOOK / FLASK ROUTES =======
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.update_queue.put(update)
+    return "OK"
+
+@app.route("/", methods=["GET"])
+def index():
+    return "AiTabBot Webhook Active ✅"
+
 if __name__ == "__main__":
-    print("Bot starting... 🧠")
-    app.run_polling()
+    app.run(host="0.0.0.0", port=10000)
