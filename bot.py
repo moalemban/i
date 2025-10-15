@@ -1,36 +1,49 @@
-import os
+from telegram import (
+    Update,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
+from flask import Flask, request
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import os
 
-# بارگذاری متغیرها از فایل .env
+# بارگذاری .env برای Railway یا توسعه محلی
 load_dotenv()
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TOKEN = os.getenv("TOKEN")
 
-# تعیین URL وب‌اپ (تَب‌دیلا Mini App)
-WEBAPP_URL = "https://epic-calm-reports-d9f9cb01.base44.app"
+app_flask = Flask(__name__)  # برای تست محلی (Webhook یا health check)
 
+@app_flask.route("/")
+def home():
+    return "AiTab Railway Bot Running 🩵"
+
+# تابع اصلی برای فرمان /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # دکمه کنار کادر تایپ
-    reply_keyboard = [[{"text": "📝 ثبت گزارش کار", "web_app": {"url": WEBAPP_URL}}]]
+    webapp_url = "https://epic-calm-reports-d9f9cb01.base44.app"
 
-    # دکمه زیر پیام
-    inline_keyboard = [
-        [InlineKeyboardButton("📝 ثبت گزارش کار", web_app=WebAppInfo(url=WEBAPP_URL))]
-    ]
+    # دکمه دائمی کنار کادر تایپ
+    reply_keyboard = [[KeyboardButton("باز کردن آی‌تاب 🩵", web_app={"url": webapp_url})]]
+    markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
 
-    await update.message.reply_text(
-        "سلام 👋 خوش آمدی 🌿\nبرای ثبت گزارش روزانه روی یکی از دکمه‌ها کلیک کن.",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard)
-    )
+    # دکمه درون‌پیامی (Inline)
+    inline_button = InlineKeyboardButton("ورود به آی‌تاب 🩵", web_app={"url": webapp_url})
+    inline_markup = InlineKeyboardMarkup([[inline_button]])
 
-    await update.message.reply_text(
-        "برای شروع گزارش روی دکمه زیر کلیک کن:",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
-    )
+    await update.message.reply_text("خوش آمدی به آی‌تاب 🎯", reply_markup=markup)
+    await update.message.reply_text("برای ورود به اپ هوشمند، روی دکمه‌ی زیر بزن:", reply_markup=inline_markup)
 
+# ساخت اپلیکیشن ربات
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+
+# اجرای مستقیم به‌صورت polling (برای تست یا Railway بدون SSL)
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    print("🚀 Tabdila Bot started and listening...")
+    print("Bot starting... 🧠")
     app.run_polling()
