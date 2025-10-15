@@ -1,5 +1,5 @@
 from flask import Flask, request
-from telegram import Bot, Update, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
+from telegram import Update, Bot, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio, random
 
@@ -9,9 +9,13 @@ PORT = 10000
 
 app = Flask(__name__)
 
-# ساخت مستقیم، بدون builder و بدون Updater
-application = Application(bot=Bot(TOKEN), update_queue=None)
+# مرحله ساخت: Application ساخته می‌شود ولی Updater فوراً خنثی می‌گردد
+application = Application.builder().token(TOKEN).build()
+application.updater = None  # 💣 حذف Updater که در build ساخته شده
+application.job_queue = None
+application._running = True  # اجازه اجرای مستقیم بدون start()
 
+# ---------- Handlers ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = [[KeyboardButton("🚀 ورود به Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
     markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
@@ -32,12 +36,10 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_markdown(msg)
 
 async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "🌿 درباره‌ی آی‌تاب:\n"
-        "نماد خودمدیریتی و زیبایی در آموزش معلمانه.\n"
-        "فرآیندهای آموزشی‌ت رو نرم و منظّم می‌کنم 💎"
+    await update.message.reply_text(
+        "🌿 آی‌تاب: نماد خودمدیریتی و زیبایی در آموزش معلمانه.\n"
+        "من فرآیندهای آموزشی‌ت رو نرم و آرام می‌کنم 💎"
     )
-    await update.message.reply_text(msg)
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(random.choice([
@@ -52,6 +54,7 @@ application.add_handler(CommandHandler("help", help_cmd))
 application.add_handler(CommandHandler("about", about_cmd))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
+# ---------- Webhook ----------
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     data = request.get_json(force=True)
@@ -64,5 +67,5 @@ def home():
     return "🌊 AiTabBot Webhook-only — Python 3.13 stable ✅"
 
 if __name__ == "__main__":
-    print("✅ AiTabBot running on Flask webhook, no Updater")
+    print("✅ AiTabBot running with patched Application (no Updater init)")
     app.run(host="0.0.0.0", port=PORT)
