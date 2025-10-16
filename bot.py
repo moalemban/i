@@ -1,6 +1,5 @@
 # ------------------------------
 # AiTabBot — Minimal Telegram Bot (Polling Mode)
-# Author: Hossein Taherkenar
 # ------------------------------
 
 from telegram import (
@@ -15,6 +14,7 @@ from telegram.ext import (
     ContextTypes,
 )
 import asyncio
+import platform
 
 BOT_TOKEN = "8451634743:AAH7J4RtoICOcVqJ7VWbXZGwmjqqUtRzvRA"
 AITAB_URL = "https://epic-calm-reports-d9f9cb01.base44.app"
@@ -47,8 +47,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == "__main__":
-    # ⚙️ اصلاح حلقه رویدادها برای ویندوز
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    # ✅ فقط روی ویندوز loop policy رو تنظیم کن
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
