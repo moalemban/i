@@ -1,4 +1,4 @@
-# AiTabBot — Calm Webhook Edition 2025
+# AiTabBot — Calm Webhook Edition 2025 (Revised)
 # Author: Hossein Taherkenar (Tabdila / Farhangian University Kerman)
 # Description: Pure Flask + Bot webhook (no Application, no Updater)
 # Color theme: Calm Turquoise (#4ED1C9)
@@ -15,22 +15,39 @@ PORT = int(os.getenv("PORT", 10000))
 
 # ───────────── Flask App + Telegram Bot ─────────────
 app = Flask(__name__)
-bot = Bot(token=TOKEN)
+# Bot instance is now globally available
+bot = Bot(token=TOKEN) 
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def receive_update():
-    data = request.get_json(force=True)
-    if not data or "message" not in data:
-        return "ignored"
+    # Safely get the JSON data from the request body
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        # If request body is not valid JSON, ignore
+        return "ignored (invalid json)"
 
-    msg = data["message"]
-    chat_id = msg["chat"]["id"]
-    text = msg.get("text", "")
+    # Safely get the message object from the update
+    # Note: Telegram updates can be 'message', 'edited_message', 'callback_query', etc.
+    msg = data.get("message")
+
+    # If the update is not a standard message, gracefully ignore it
+    if not msg:
+        return "ignored (no message)"
+    
+    # Extract necessary information securely
+    try:
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "") # .get ensures that if 'text' key is missing, it defaults to ""
+    except KeyError:
+        # This handles cases where chat_id might be missing (highly unlikely for messages)
+        return "ignored (missing chat info)"
 
     # ───────────── Commands ─────────────
     if text == "/start":
         keyboard = [[KeyboardButton("🚀 ورود به Mini App", web_app=WebAppInfo(MINI_APP_URL))]]
         markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        # Using bot.send_message
         bot.send_message(
             chat_id=chat_id,
             text=(
@@ -61,7 +78,8 @@ def receive_update():
             ),
         )
 
-    else:
+    # ───────────── General Text Response ─────────────
+    elif text: # Only respond if the message has actual text
         bot.send_message(
             chat_id=chat_id,
             text=random.choice([
@@ -71,7 +89,7 @@ def receive_update():
                 "💎 نظمش حس شد!"
             ]),
         )
-
+    
     return "OK"
 
 @app.route("/", methods=["GET"])
@@ -80,4 +98,5 @@ def home():
 
 if __name__ == "__main__":
     print("✅ AiTabBot started successfully — Flask webhook mode")
+    # The default host for Railway/production environments should be '0.0.0.0'
     app.run(host="0.0.0.0", port=PORT)
