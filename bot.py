@@ -18,12 +18,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # دکمه آبی کنار نوار تایپ برای باز کردن مستقیم وب‌اپ
     reply_keyboard = ReplyKeyboardMarkup(
-        [[KeyboardButton("باز کردن آی‌تاب 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]],
+        [[KeyboardButton(باز کردن آی تاک 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]],
         resize_keyboard=True
     )
 
     await update.message.reply_text(
-        f"سلام {user_name} 👋\nبه AiTabBot خوش اومدی.\nاز دکمه‌ی زیر برای آغاز گزارش روزانه‌ت استفاده کن:",
+        f"سلام {user_name} 👋\nبه آی‌تاک خوش اومدی.\nاز دکمه‌ی زیر برای آغاز گزارش روزانه‌ت استفاده کن:",
         reply_markup=inline_keyboard
     )
 
