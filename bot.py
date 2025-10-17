@@ -13,12 +13,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # دکمه شیشه‌ای برای باز کردن مینی‌اپ
     inline_keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("باز کردن آی‌تاب 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]
+        [InlineKeyboardButton("باز کردن آی‌تاک 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]
     ])
 
     # دکمه آبی کنار نوار تایپ برای باز کردن مستقیم وب‌اپ
     reply_keyboard = ReplyKeyboardMarkup(
-        [[KeyboardButton(باز کردن آی تاک 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]],
+        [[KeyboardButton("باز کردن آی‌تاک 🩵", web_app=WebAppInfo(url=WEBAPP_URL))]],
         resize_keyboard=True
     )
 
@@ -34,7 +34,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ---- اجرای ربات ----
 if __name__ == "__main__":
-    # در ویندوز گاهی نیاز به EventLoopPolicy متفاوت داریم، ولی در لینوکس Railway حذفش می‌کنیم
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
